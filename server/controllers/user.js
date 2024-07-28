@@ -5,6 +5,10 @@ const {
   generateAccessToken,
   generateRefreshToken,
 } = require("../middlewares/jwt");
+const crypto = require("crypto");
+
+const sendMail = require("../utils/sendMail");
+const { use } = require("../routes/user");
 
 const register = asyncHandler(async (req, res, next) => {
   const { email, password, firstName, lastName } = req.body;
@@ -120,10 +124,64 @@ const logout = asyncHandler(async (req, res) => {
     message: "Logout successfully",
   });
 });
+
+// reset password
+// client gui email => server check email co hop le hay khong => gui email + kem theo link (password change token)
+// client check email => click link
+// client gui api kem theo token
+// check token có giống với token mà server gửi mail hay không
+// change password
+
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.query;
+  if (!email) throw new Error("Missing email");
+  const user = await User.findOne({ email });
+  if (!user) throw new Error("User not found");
+  const resetToken = user.createPasswordChangeToken();
+  await user.save();
+
+  const html = `Vui lòng click vào link dưới đây để thay đổi mật khẩu của bạn. Link này sẽ hết hạn sau 15 phút kể từ bây giờ. <a href=${process.env.URL_SERVER}/api/user/reset-password/${resetToken}>Click here</a>`;
+
+  const data = {
+    email,
+    html,
+  };
+  const result = await sendMail(data);
+  return res.status(200).json({
+    success: true,
+    result,
+  });
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { password, token } = req.body;
+  if (!password || !token) throw new Error("Missing inputs");
+  const passwordResetToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+  const user = await User.findOne({
+    passwordResetToken,
+    passwordResetExp: { $gt: Date.now() },
+  });
+  if (!user) throw new Error("Invalid reset token");
+  user.password = password;
+  user.passwordResetToken = undefined;
+  user.passwordChangedAt = Date.now();
+  user.passwordResetExp = undefined;
+  await user.save();
+  return res.status(200).json({
+    success: user ? true : false,
+    message: user ? "Updated password" : "Something was wrong",
+  });
+});
+
 module.exports = {
   register,
   login,
   getCurrent,
   refreshAccessToken,
   logout,
+  forgotPassword,
+  resetPassword,
 };
