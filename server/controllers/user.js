@@ -49,15 +49,19 @@ const login = asyncHandler(async (req, res, next) => {
   if (response && (await response.isCorrectPassword(password))) {
     // login thanh cong
     // vì response trả về không phải là 1 Object thuần mà là Instance của mongoose nên phải convert sang Object để lấy các thuộc tính
-    const { password, role, ...userData } = response.toObject();
+    const { password, role, refreshToken, ...userData } = response.toObject();
     const accessToken = generateAccessToken(userData._id, role);
-    const refreshToken = generateRefreshToken(userData._id);
+    const newRefreshToken = generateRefreshToken(userData._id);
 
     // Lưu refreshToken vào database
-    await User.findByIdAndUpdate(userData._id, { refreshToken }, { new: true }); // new: true => tra ve data sau khi update
+    await User.findByIdAndUpdate(
+      userData._id,
+      { newRefreshToken },
+      { new: true }
+    ); // new: true => tra ve data sau khi update
 
     // Lưu refreshToken vào cookie
-    res.cookie("refreshToken", refreshToken, {
+    res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -75,7 +79,7 @@ const getCurrent = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   const user = await User.findById(_id).select("-password -refreshToken -role");
   return res.status(200).json({
-    success: true,
+    success: user ? true : false,
     result: user ? user : "User not found",
   });
 });
@@ -176,6 +180,56 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
+const getAllUser = asyncHandler(async (req, res) => {
+  const response = await User.find().select("-refreshToken -password -role");
+  return res.status(200).json({
+    success: response ? true : false,
+    data: response,
+  });
+});
+
+const deleteUser = asyncHandler(async (req, res) => {
+  const { _id } = req.query;
+  if (!_id) throw new Error("Id user invalid");
+
+  // response trả về là user đã bị xóa
+  const response = await User.findByIdAndDelete({ _id });
+  // console.log(response);
+  return res.status(200).json({
+    success: response ? true : false,
+    deletedUser: response
+      ? `User has email ${response.email} deleted`
+      : "Cannot delete this user",
+  });
+});
+
+const updateUser = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  if (!_id || Object.keys(req.body).length === 0)
+    throw new Error("Missing inputs");
+  const response = await User.findByIdAndUpdate(_id, req.body, {
+    new: true,
+  }).select("-password -role");
+  return res.status(200).json({
+    success: response ? true : false,
+    updatedUser: response ? response : "Cannot update",
+  });
+});
+
+const updateUserByAdmin = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  if (!userId || Object.keys(req.body).length === 0)
+    throw new Error("Missing inputs");
+  const response = await User.findByIdAndUpdate(userId, req.body, {
+    new: true,
+  }).select("-password -role -refreshToken");
+  console.log(response);
+  return res.status(200).json({
+    success: response ? true : false,
+    updatedUser: response ? response : "Cannot update",
+  });
+});
+
 module.exports = {
   register,
   login,
@@ -184,4 +238,8 @@ module.exports = {
   logout,
   forgotPassword,
   resetPassword,
+  getAllUser,
+  deleteUser,
+  updateUser,
+  updateUserByAdmin,
 };
