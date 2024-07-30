@@ -24,11 +24,52 @@ const getProduct = asyncHandler(async (req, res) => {
 });
 
 const getAllProduct = asyncHandler(async (req, res) => {
-  const products = await Product.find();
-  return res.status(200).json({
-    success: products ? true : false,
-    data: products ? products : "Cannot get products",
-  });
+  // Link tham khao
+  // https://blog.jeffdevslife.com/p/1-mongodb-query-of-advanced-filtering-sorting-limit-field-and-pagination-with-mongoose/
+  // https://blog.jeffdevslife.com/p/2-mongodb-query-of-advanced-filtering-sorting-limit-field-and-pagination-with-mongoose/
+  const queries = { ...req.query };
+
+  // tách các trường đặc biệt ra khỏi queries
+  const excludeFields = ["limit", "sort", "page", "fields"];
+  excludeFields.map((item) => delete queries[item]);
+
+  // format lai các operators cho đúng cú pháp của mongoose
+  let queryString = JSON.stringify(queries);
+  queryString = queryString.replace(
+    /\b(gte|gt|lt|lte)\b/g,
+    (matchElement) => `$${matchElement}`
+  );
+  console.log("queryString: ", queryString); // la 1 String
+  const formatedQueries = JSON.parse(queryString);
+  console.log("formatedQueries: ", formatedQueries); // la 1 object
+
+  // filtering
+  if (queries?.title)
+    formatedQueries.title = { $regex: queries.title, $options: "i" };
+  let queryCommand = Product.find(formatedQueries); // Promise dang o trang thai pending
+
+  //sorting
+  if (req.query.sort) {
+    console.log("Sort: ", req.query.sort);
+    const sortBy = req.query.sort.split(",").join(" ");
+    queryCommand = queryCommand.sort(sortBy);
+  }
+
+  // Execute query
+  // Số lượng sp thỏa mãn điều kiện (counts) !== số lượng sp trả về 1 lần gọi API
+  queryCommand
+    .exec()
+    .then(async (response) => {
+      const counts = await Product.find(formatedQueries).countDocuments();
+      return res.status(200).json({
+        success: response ? true : false,
+        data: response ? response : "Cannot get products",
+        counts,
+      });
+    })
+    .catch((err) => {
+      throw new Error(err.message);
+    });
 });
 
 const updateProduct = asyncHandler(async (req, res) => {
