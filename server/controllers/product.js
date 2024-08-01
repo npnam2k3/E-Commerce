@@ -39,9 +39,9 @@ const getAllProduct = asyncHandler(async (req, res) => {
     /\b(gte|gt|lt|lte)\b/g,
     (matchElement) => `$${matchElement}`
   );
-  console.log("queryString: ", queryString); // la 1 String
+  // console.log("queryString: ", queryString); // la 1 String
   const formatedQueries = JSON.parse(queryString);
-  console.log("formatedQueries: ", formatedQueries); // la 1 object
+  // console.log("formatedQueries: ", formatedQueries); // la 1 object
 
   // filtering
   if (queries?.title)
@@ -50,10 +50,24 @@ const getAllProduct = asyncHandler(async (req, res) => {
 
   //sorting
   if (req.query.sort) {
-    console.log("Sort: ", req.query.sort);
+    // console.log("Sort: ", req.query.sort);
     const sortBy = req.query.sort.split(",").join(" ");
     queryCommand = queryCommand.sort(sortBy);
   }
+
+  // Fields limiting
+  if (req.query.fields) {
+    // console.log("Fields: ", req.query.fields);
+    const fields = req.query.fields.split(",").join(" ");
+    queryCommand = queryCommand.select(fields);
+  }
+
+  // Pagination
+  // page=2&limit=10, 1-10 page 1, 11-20 page 2, 21-30 page 3
+  const page = req.query.page * 1 || 1; // *1 to convert to Number
+  const limit = req.query.limit * 1 || process.env.LIMIT_PRODUCT;
+  const skip = (page - 1) * limit;
+  queryCommand = queryCommand.skip(skip).limit(limit);
 
   // Execute query
   // Số lượng sp thỏa mãn điều kiện (counts) !== số lượng sp trả về 1 lần gọi API
@@ -63,8 +77,8 @@ const getAllProduct = asyncHandler(async (req, res) => {
       const counts = await Product.find(formatedQueries).countDocuments();
       return res.status(200).json({
         success: response ? true : false,
-        data: response ? response : "Cannot get products",
         counts,
+        data: response ? response : "Cannot get products",
       });
     })
     .catch((err) => {
@@ -93,10 +107,61 @@ const deleteProduct = asyncHandler(async (req, res) => {
   });
 });
 
+const ratings = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { star, comment, productId } = req.body;
+  if (!star || !productId) throw new Error("Missing inputs");
+  const ratingProduct = await Product.findById(productId);
+
+  // Kiểm tra xem user này đã đánh giá sản phẩm với id này hay chưa
+  const alreadyRating = ratingProduct?.ratings?.find(
+    (element) => element.postedBy.toString() === _id
+  );
+  // console.log("Already ratings: ", alreadyRating);
+  if (alreadyRating) {
+    // đã đánh giá rồi => update star & comment
+    await Product.updateOne(
+      {
+        ratings: { $elemMatch: alreadyRating }, // match voi object alreadyRating tra ve thoa man dieu kien
+      },
+      {
+        $set: { "ratings.$.star": star, "ratings.$.comment": comment }, // $ -> tuong trung cho object duoc tra ve
+      },
+      { new: true }
+    );
+  } else {
+    // add star & comment
+    await Product.findByIdAndUpdate(
+      productId,
+      {
+        // đối với mảng thì dùng push của mongoose
+        $push: { ratings: { star, comment, postedBy: _id } },
+      },
+      { new: true }
+    );
+  }
+
+  // sum rating
+  const updatedProduct = await Product.findById(productId);
+  const ratingCount = updatedProduct.ratings.length;
+  const sumRating = updatedProduct.ratings.reduce(
+    (sum, element) => sum + element.star,
+    0
+  );
+  updatedProduct.totalRatings = Math.round((sumRating * 10) / ratingCount) / 10;
+  updatedProduct.save();
+  // console.log("sumRating: ", sumRating);
+  return res.status(200).json({
+    success: true,
+    updatedProduct,
+  });
+});
+
 module.exports = {
   createProduct,
   getProduct,
   getAllProduct,
   updateProduct,
   deleteProduct,
+  ratings,
 };
