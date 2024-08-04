@@ -157,6 +157,22 @@ const ratings = asyncHandler(async (req, res) => {
   });
 });
 
+const uploadImagesProduct = asyncHandler(async (req, res) => {
+  const { productId } = req.params;
+  if (!req.files) throw new Error("Missing inputs");
+  const response = await Product.findByIdAndUpdate(
+    productId,
+    {
+      $push: { images: { $each: req.files.map((element) => element.path) } },
+    },
+    { new: true }
+  );
+  return res.json({
+    success: response ? true : false,
+    data: response ? response : "Cannot upload image product",
+  });
+});
+
 module.exports = {
   createProduct,
   getProduct,
@@ -164,4 +180,5 @@ module.exports = {
   updateProduct,
   deleteProduct,
   ratings,
+  uploadImagesProduct,
 };

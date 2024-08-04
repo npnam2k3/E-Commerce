@@ -3,6 +3,8 @@ const productRouter = require("./product");
 const categoryProductRouter = require("./categoryProduct");
 const categoryBlogRouter = require("./blogCategory");
 const blogRouter = require("./blog");
+const brandRouter = require("./brand");
+const couponRouter = require("./coupon");
 const { notFound, errorHandler } = require("../middlewares/errorHandler");
 
 const initRoutes = (app) => {
@@ -11,6 +13,8 @@ const initRoutes = (app) => {
   app.use("/api/category-product", categoryProductRouter);
   app.use("/api/category-blog", categoryBlogRouter);
   app.use("/api/blog", blogRouter);
+  app.use("/api/brand", brandRouter);
+  app.use("/api/coupon", couponRouter);
 
   // neu khong trung voi url nao thi se chay vao ham notFound
   app.use(notFound);

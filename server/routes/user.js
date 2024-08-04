@@ -17,8 +17,14 @@ router.get(
 router.delete("/", [verifyAccessToken, isAdmin], userController.deleteUser);
 router.put("/updateCurrent", verifyAccessToken, userController.updateUser);
 router.put(
+  "/updateAddress",
+  verifyAccessToken,
+  userController.updateAddressUser
+);
+router.put(
   "/updateUserByAdmin/:userId",
   [verifyAccessToken, isAdmin],
   userController.updateUserByAdmin
 );
+router.put("/updateCart", [verifyAccessToken], userController.updateCart);
 module.exports = router;
