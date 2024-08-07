@@ -1,13 +1,11 @@
 import React from "react";
-import { useEffect, useState } from "react";
-import { apiGetCategories } from "../apis/app";
 import { NavLink } from "react-router-dom";
 import { createSlug } from "../utils/helper";
 import { useSelector } from "react-redux";
 
 const Sidebar = () => {
   const { categories } = useSelector((state) => state.app);
-  console.log(categories);
+  // console.log(categories);
   return (
     <div className="flex flex-col border">
       {categories?.map((el) => (
