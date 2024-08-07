@@ -12,6 +12,14 @@ const data = [
       "https://cdn.shopify.com/s/files/1/1903/4853/files/pc-1_300x.jpg?v=1613166682",
   },
   {
+    cate: "Speaker",
+    brand: [],
+  },
+  {
+    cate: "Camera",
+    brand: [],
+  },
+  {
     cate: "Laptop",
     brand: ["Asus", "Dell", "Acer", "Lenovo", "HP", "Macbook"],
     image:

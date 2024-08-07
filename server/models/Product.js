@@ -26,6 +26,10 @@ var productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    thumb: {
+      type: String,
+      require: true,
+    },
     category: {
       type: String,
       required: true,

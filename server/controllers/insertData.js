@@ -17,10 +17,12 @@ const fn = async (product) => {
     sold: Math.round(Math.random() * 100),
     images: product?.images,
     color: product?.variants?.find((e) => e.lable === "Color")?.variants[0],
+    thumb: product?.thumb,
   });
 };
 const insertProduct = asyncHandler(async (req, res) => {
   const promises = [];
+  // console.log(data.length);
   for (let product of data) {
     promises.push(fn(product));
   }
