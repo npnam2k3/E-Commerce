@@ -5,7 +5,6 @@ import trending from "../assets/trending.png";
 import { generateStarFromNumber } from "../utils/helper";
 import SelectOption from "./SelectOption";
 import icons from "../utils/icons";
-import { CiLight } from "react-icons/ci";
 
 const { AiFillEye, BsFillSuitHeartFill, IoMenu } = icons;
 
