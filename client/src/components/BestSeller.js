@@ -51,7 +51,7 @@ const BestSeller = () => {
       <div className="flex text-[20px] gap-8  ml-[-32px]">
         {tabs.map((el) => (
           <span
-            className={`font-semibold px-8 capitalize border-r cursor-pointer text-gray-400 ${
+            className={`font-semibold px-8 uppercase border-r cursor-pointer text-gray-400 ${
               activedTab === el.id ? "text-gray-900" : ""
             }`}
             onClick={() => setActivedTab(el.id)}
