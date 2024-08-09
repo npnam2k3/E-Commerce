@@ -73,7 +73,6 @@ const Home = () => {
           BLOG POSTS
         </h3>
       </div>
-      <div className="w-full h-[500px] bg-main">FOOTER</div>
     </>
   );
 };
