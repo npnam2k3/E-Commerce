@@ -11,7 +11,7 @@ const createCategory = asyncHandler(async (req, res) => {
 });
 
 const getCategories = asyncHandler(async (req, res) => {
-  const response = await CategoryProduct.find().select("_id title");
+  const response = await CategoryProduct.find();
   return res.status(200).json({
     success: response ? true : false,
     prodCategories: response ? response : "Cannot get Categories",
